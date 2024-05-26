@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Profiles</title>
+    <style>
+      .profile {
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 8px 0;
+        background-color: #f9f9f9;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .profile h2 {
+        margin: 0;
+        font-size: 1.5em;
+      }
+      .profile p {
+        margin: 8px 0;
+      }
+      .search-input {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 16px;
+        font-size: 1em;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://www.unpkg.com/react@18.2.0/umd/react.development.js"></script>
+    <script src="https://www.unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+      const UserProfile = ({ user }) => {
+        return (
+          <div className="profile">
+            <h2>{user.name}</h2>
+            <p>Email: {user.email}</p>
+            <p>Phone: {user.phone}</p>
+          </div>
+        );
+      };
+
+      const App = () => {
+        const [users, setUsers] = React.useState([
+          { name: "John Doe", email: "john@example.com", phone: "123-456-7890" },
+          { name: "Jane Smith", email: "jane@example.com", phone: "234-567-8901" },
+          { name: "Alice Johnson", email: "alice@example.com", phone: "345-678-9012" },
+          { name: "Bob Brown", email: "bob@example.com", phone: "456-789-0123" },
+        ]);
+
+        const [searchQuery, setSearchQuery] = React.useState("");
+
+        const filteredUsers = React.useMemo(() => {
+          return users.filter(user =>
+            user.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }, [users, searchQuery]);
+
+        return (
+          <div>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search by name"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <div>
+              {filteredUsers.map((user, index) => (
+                <UserProfile key={index} user={user} />
+              ))}
+            </div>
+          </div>
+        );
+      };
+
+      ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+  </body>
+</html>

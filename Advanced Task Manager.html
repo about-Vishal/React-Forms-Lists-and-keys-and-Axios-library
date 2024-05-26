@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Advanced Task Manager</title>
+    <style>
+      .task {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 10px;
+        margin: 5px 0;
+      }
+      .task.completed {
+        text-decoration: line-through;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://www.unpkg.com/react@18.2.0/umd/react.development.js"></script>
+    <script src="https://www.unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script type="text/babel">
+      const { useState, useEffect } = React;
+
+      const Task = ({ task, onUpdate, onDelete }) => {
+        const [isEditing, setIsEditing] = useState(false);
+        const [title, setTitle] = useState(task.title);
+        const [assignee, setAssignee] = useState(task.assignee);
+
+        const handleUpdate = () => {
+          onUpdate({ ...task, title, assignee });
+          setIsEditing(false);
+        };
+
+        return (
+          <div className={`task ${task.isCompleted ? 'completed' : ''}`}>
+            {isEditing ? (
+              <div>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+                <input
+                  type="text"
+                  value={assignee}
+                  onChange={(e) => setAssignee(e.target.value)}
+                />
+                <button onClick={handleUpdate}>Save</button>
+                <button onClick={() => setIsEditing(false)}>Cancel</button>
+              </div>
+            ) : (
+              <div>
+                <h3>{task.title}</h3>
+                <p>Assignee: {task.assignee}</p>
+                <button onClick={() => onUpdate({ ...task, isCompleted: !task.isCompleted })}>
+                  {task.isCompleted ? 'Mark Incomplete' : 'Mark Complete'}
+                </button>
+                <button onClick={() => setIsEditing(true)}>Edit</button>
+                <button onClick={() => onDelete(task.id)}>Delete</button>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      const TaskManager = () => {
+        const [tasks, setTasks] = useState([]);
+        const [title, setTitle] = useState('');
+        const [assignee, setAssignee] = useState('');
+        const [filter, setFilter] = useState('all');
+        const [searchAssignee, setSearchAssignee] = useState('');
+
+        useEffect(() => {
+          axios.get('http://localhost:3001/todos')
+            .then(response => setTasks(response.data))
+            .catch(error => console.error('Error fetching tasks:', error));
+        }, []);
+
+        const addTask = () => {
+          const newTask = { title, isCompleted: false, assignee };
+          axios.post('http://localhost:3001/todos', newTask)
+            .then(response => setTasks([...tasks, response.data]))
+            .catch(error => console.error('Error adding task:', error));
+        };
+
+        const updateTask = (updatedTask) => {
+          axios.put(`http://localhost:3001/todos/${updatedTask.id}`, updatedTask)
+            .then(response => {
+              setTasks(tasks.map(task => task.id === updatedTask.id ? response.data : task));
+            })
+            .catch(error => console.error('Error updating task:', error));
+        };
+
+        const deleteTask = (id) => {
+          axios.delete(`http://localhost:3001/todos/${id}`)
+            .then(() => {
+              setTasks(tasks.filter(task => task.id !== id));
+            })
+            .catch(error => console.error('Error deleting task:', error));
+        };
+
+        const filteredTasks = tasks.filter(task => {
+          if (filter === 'incomplete' && task.isCompleted) return false;
+          if (searchAssignee && !task.assignee.toLowerCase().includes(searchAssignee.toLowerCase())) return false;
+          return true;
+        });
+
+        return (
+          <div>
+            <h1>Advanced Task Manager</h1>
+            <input
+              type="text"
+              placeholder="Task title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <input
+              type="text"
+              placeholder="Assignee"
+              value={assignee}
+              onChange={(e) => setAssignee(e.target.value)}
+            />
+            <button onClick={addTask}>Add Task</button>
+            <hr />
+            <button onClick={() => setFilter('all')}>Show All Tasks</button>
+            <button onClick={() => setFilter('incomplete')}>Show Incomplete Tasks</button>
+            <input
+              type="text"
+              placeholder="Search by assignee"
+              value={searchAssignee}
+              onChange={(e) => setSearchAssignee(e.target.value)}
+            />
+            <div>
+              {filteredTasks.map(task => (
+                <Task key={task.id} task={task} onUpdate={updateTask} onDelete={deleteTask} />
+              ))}
+            </div>
+          </div>
+        );
+      };
+
+      ReactDOM.render(<TaskManager />, document.getElementById('root'));
+    </script>
+  </body>
+</html>
